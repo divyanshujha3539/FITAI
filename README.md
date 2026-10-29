@@ -1,100 +1,47 @@
-# FitAI — Smart Fitness & Nutrition Management Platform
+# FitAI
 
-**An AI-powered, cloud-based fitness and nutrition platform built with Next.js, Microsoft Azure, Azure SQL Database, and Microsoft Foundry.**
+FitAI is a fitness and nutrition companion designed around student life in India. This first milestone establishes the Next.js App Router foundation, responsive navigation, dashboard and the route structure for the product areas.
 
-FitAI is a fitness and nutrition management application designed to help users track their meals, monitor nutritional intake, plan workouts, and make affordable, data-driven fitness decisions. The platform combines artificial intelligence, relational database management, cloud computing, and secure application design in a single system.
+## Run locally
 
-The project also demonstrates practical concepts from **RDBMS, Microsoft DP-900, Cloud Security, and System Design**.
+```bash
+npm install
+npm run dev
+```
 
----
+Open [http://localhost:3000](http://localhost:3000). The root route redirects to the dashboard.
 
-## Table of Contents
+## Current milestone
 
-- [Project Overview](#project-overview)
-- [Objectives](#objectives)
-- [Core Features](#core-features)
-- [Technology Stack](#technology-stack)
-- [System Architecture](#system-architecture)
-- [Database Design](#database-design)
-- [Security](#security)
-- [Academic Relevance](#academic-relevance)
-- [Project Structure](#project-structure)
-- [Getting Started](#getting-started)
-- [Environment Configuration](#environment-configuration)
-- [Database Setup](#database-setup)
-- [Running the Application](#running-the-application)
-- [Team Collaboration](#team-collaboration)
-- [Testing](#testing)
-- [Deployment](#deployment)
-- [Future Enhancements](#future-enhancements)
+The interface uses honest empty states. Nutrition, workout, profile, AI, gym and report routes are ready for their data and workflows to be added in later milestones. They do not yet save records or call external services.
 
-## Project Overview
+The initial Azure SQL schema, ER diagram, migration, repeatable reference-data seed, sample reporting queries, and normalization/indexing notes are documented in [`docs/database.md`](docs/database.md). The scripts have not been run against a live database.
 
-Many college students struggle to maintain a balanced diet and consistent workout routine while managing limited budgets and busy academic schedules. FitAI aims to address these challenges through an integrated fitness and nutrition platform.
+## Quality checks
 
-Users can record meals, review nutrition estimates, plan workout schedules, and monitor their progress. AI-assisted meal interpretation helps convert natural-language food descriptions into structured food entries, while deterministic application logic calculates nutritional values from the food database.
+```bash
+npm run lint
+npm run typecheck
+npm run build
+```
 
-The application uses a relational database for persistent storage and cloud services for hosting and AI capabilities.
+## Authentication and roles
 
-## Objectives
+The app supports `ADMIN`, `TRAINER`, and `USER` roles. User and Trainer accounts can register publicly. Trainer accounts start with `Pending` approval and cannot receive customer assignments until an admin approves them. Admin accounts cannot register publicly.
 
-- Simplify meal and nutrition tracking.
-- Provide personalized workout planning and history.
-- Help students identify affordable sources of protein and nutrition.
-- Use AI to interpret meal descriptions.
-- Store and manage structured information using a relational database.
-- Apply authentication, authorization, and secure data-access practices.
-- Demonstrate cloud architecture and data-management concepts through a practical application.
+### Configure and migrate
 
-## Core Features
+1. Copy `.env.example` to `.env.local` and replace every placeholder. Keep `.env.local` out of source control. `SESSION_SECRET` must be a randomly generated value with at least 32 characters. The Azure SQL login needs permission to run the migrations and normal application queries.
+2. Apply `db/migrations/001_initial_schema.sql`, then `db/migrations/002_role_auth_and_assignments.sql` to the intended Azure SQL database. Migration 002 adds password hashes to the existing identity table and creates role, trainer profile, request, assignment history, and audit tables. Both are additive; neither drops existing data.
+3. Set `INITIAL_ADMIN_EMAIL` and `INITIAL_ADMIN_PASSWORD` before the first Admin sign-in. The app provisions that account on an Admin sign-in only if the configured email does not already exist. It hashes the password and assigns `ADMIN` on the server. Bootstrap does not overwrite existing accounts or reset passwords after restart. If the email already belongs to another role, bootstrap does not promote it; choose a fresh owner-controlled email or securely correct the account directly in the database.
+4. To rotate the administrator password, change it through a future owner-only password-management process or update its bcrypt hash through a controlled database operation. Changing `INITIAL_ADMIN_PASSWORD` does not rotate a provisioned password. To rotate sessions, replace `SESSION_SECRET`; this signs out all current sessions.
 
-### 1. AI Meal Analyzer
-- Interpret natural-language descriptions of meals.
-- Identify candidate foods, portions, and quantities.
-- Match candidate foods against the food catalogue.
-- Allow users to review and correct proposed entries.
-- Calculate nutrition from stored reference data rather than relying on AI-generated arithmetic.
+### Assignment workflow
 
-### 2. Nutrition Tracker
-- Record breakfast, lunch, dinner, and snacks.
-- Track calories, protein, carbohydrates, and fats.
-- View daily nutrition totals and historical records.
-- Edit or delete recorded meals.
+Members submit a trainer request. The admin approves trainer applications and makes the final assignment or reassignment. The assignment write uses a serializable transaction and the database has a unique filtered index allowing only one active assignment per member; ended assignment rows preserve history. Trainers can see only their active assigned customers. Admin assignment changes and trainer approval/rejection are written to `AdminAuditEvents`.
 
-### 3. Adaptive Workout Planner
-- Support 3-day, 4-day, 5-day, and 6-day workout splits.
-- Generate structured workout schedules.
-- Record exercises, sets, repetitions, and weights.
-- Review workout history and completion statistics.
+Email verification, trainer/member messaging, profile editing, account disabling, and fitness-record persistence are not implemented. Existing feature routes remain honest placeholder screens; this authentication milestone does not connect AI, nutrition, or workouts to live private records. Azure SQL has not been configured or migrated in this workspace, and no administrator has been provisioned here.
 
-### 4. Affordable Nutrition Optimizer
-- Compare foods by protein per rupee.
-- Suggest budget-conscious food combinations.
-- Compare nutritional and estimated cost differences between food alternatives.
-- Support practical nutrition planning for college and hostel students.
+### Test each role
 
-### 5. Role-Based Access Control
-The planned role-based system includes three roles:
-
-- **User:** Manage personal fitness information, meals, workouts, and trainer requests.
-- **Trainer:** Review eligible requests and access authorized assigned-customer information.
-- **Admin:** Manage trainer and user relationships, review requests, and oversee assignments.
-
-Administrative accounts must be provisioned securely; public registration is restricted to users and trainers.
-
-### 6. Progress Dashboard
-- Display nutrition summaries and trends.
-- Track workout completion.
-- Compare actual records with user-defined goals.
-- Present analytics derived from stored application data.
-
-### 7. Fitness Memory Assistant
-- Answer supported questions about a user's recorded meals and workouts.
-- Use database-backed information to ground responses.
-- Clearly identify missing information rather than inventing records.
-
-### 8. Nearby Gym Finder
-- Search for nearby gyms using a supported mapping or location-data provider.
-- Display available location information and directions.
-
-*Feature availability
+After configuring Azure SQL and applying both migrations, start the app with `npm run dev`. Create a User and Trainer through `/register`; sign in from `/login` with each matching role. Set the owner bootstrap variables and select Admin on `/login` to provision and enter `/admin`. Trainer accounts need admin approval before they appear as assignment choices. An account selected under the wrong login role receives a generic credential/role mismatch error.
