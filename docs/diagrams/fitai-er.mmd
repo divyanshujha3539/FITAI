@@ -1,0 +1,199 @@
+erDiagram
+    USERS ||--o{ USER_IDENTITIES : authenticates_as
+    USERS ||--o| USER_PROFILES : has
+    USERS ||--o{ USER_DIETARY_PREFERENCES : selects
+    DIETARY_PREFERENCES ||--o{ USER_DIETARY_PREFERENCES : assigned_to
+    USERS ||--o{ USER_NUTRITION_TARGETS : sets
+
+    FOOD_CATEGORIES ||--o{ FOODS : classifies
+    FOODS ||--o{ FOOD_ALIASES : called
+    FOODS ||--o{ FOOD_SERVING_CONVERSIONS : converts
+    FOODS ||--o| FOOD_NUTRITION : describes
+    FOODS ||--o{ FOOD_PRICES : priced_by
+
+    USERS ||--o{ MEALS : logs
+    MEALS ||--|{ MEAL_ITEMS : contains
+    FOODS o|--o{ MEAL_ITEMS : matched_catalogue_food
+
+    USERS ||--o{ USER_EQUIPMENT : owns_access_to
+    EQUIPMENT ||--o{ USER_EQUIPMENT : available_to
+    EXERCISES ||--o{ EXERCISE_EQUIPMENT : requires
+    EQUIPMENT ||--o{ EXERCISE_EQUIPMENT : used_by
+
+    USERS ||--o{ WORKOUT_PLANS : creates
+    WORKOUT_PLANS ||--|{ WORKOUT_PLAN_DAYS : contains
+    WORKOUT_PLAN_DAYS ||--o{ WORKOUT_PLAN_EXERCISES : schedules
+    EXERCISES ||--o{ WORKOUT_PLAN_EXERCISES : selected_for
+    USERS ||--o{ WORKOUT_SESSIONS : schedules
+    WORKOUT_PLANS o|--o{ WORKOUT_SESSIONS : guides
+    WORKOUT_SESSIONS ||--o{ WORKOUT_LOGS : records
+    EXERCISES o|--o{ WORKOUT_LOGS : identifies
+    WORKOUT_LOGS ||--o{ WORKOUT_SETS : has
+
+    USERS {
+        nvarchar UserId PK
+        nvarchar Email UK
+        datetime2 CreatedAtUtc
+        varchar AccountStatus
+    }
+    USER_IDENTITIES {
+        bigint UserIdentityId PK
+        nvarchar UserId FK
+        varchar Provider
+        nvarchar ProviderSubject
+    }
+    USER_PROFILES {
+        nvarchar UserId PK,FK
+        varchar FitnessGoal
+        decimal DailyFoodBudget
+        decimal HeightCm
+        decimal WeightKg
+    }
+    DIETARY_PREFERENCES {
+        varchar PreferenceCode PK
+        nvarchar PreferenceName UK
+    }
+    USER_DIETARY_PREFERENCES {
+        nvarchar UserId PK,FK
+        varchar PreferenceCode PK,FK
+    }
+    USER_NUTRITION_TARGETS {
+        bigint UserNutritionTargetId PK
+        nvarchar UserId FK
+        date EffectiveFrom
+        decimal CaloriesKcal
+        decimal ProteinGrams
+    }
+    FOOD_CATEGORIES {
+        int FoodCategoryId PK
+        varchar CategoryCode UK
+        nvarchar CategoryName UK
+    }
+    FOODS {
+        bigint FoodId PK
+        int FoodCategoryId FK
+        nvarchar FoodName UK
+        nvarchar SearchName
+        bit IsActive
+    }
+    FOOD_ALIASES {
+        bigint FoodAliasId PK
+        bigint FoodId FK
+        nvarchar Alias
+        nvarchar SearchName
+        varchar LanguageCode
+    }
+    FOOD_SERVING_CONVERSIONS {
+        bigint FoodServingConversionId PK
+        bigint FoodId FK
+        nvarchar ServingName
+        decimal EquivalentAmount
+        varchar EquivalentUnit
+        varchar EvidenceStatus
+        nvarchar SourceName
+    }
+    FOOD_NUTRITION {
+        bigint FoodId PK,FK
+        decimal ReferenceAmount
+        varchar ReferenceUnit
+        decimal CaloriesKcal
+        decimal ProteinGrams
+        varchar EvidenceStatus
+        nvarchar SourceName
+    }
+    FOOD_PRICES {
+        bigint FoodPriceId PK
+        bigint FoodId FK
+        decimal PriceAmount
+        decimal QuantityAmount
+        varchar QuantityUnit
+        varchar EvidenceStatus
+        nvarchar SourceName
+        date ObservedOn
+    }
+    MEALS {
+        bigint MealId PK
+        nvarchar UserId FK
+        date MealDate
+        varchar MealType
+        nvarchar Notes
+    }
+    MEAL_ITEMS {
+        bigint MealItemId PK
+        bigint MealId FK
+        nvarchar UserId FK
+        bigint FoodId FK
+        nvarchar FoodNameSnapshot
+        decimal ServingAmount
+        varchar ServingUnit
+        decimal CaloriesKcal
+        decimal ProteinGrams
+        nvarchar NutritionSourceSnapshot
+        nvarchar NutritionSourceUrlSnapshot
+    }
+    EQUIPMENT {
+        int EquipmentId PK
+        varchar EquipmentCode UK
+        nvarchar EquipmentName UK
+    }
+    USER_EQUIPMENT {
+        nvarchar UserId PK,FK
+        int EquipmentId PK,FK
+    }
+    EXERCISES {
+        bigint ExerciseId PK
+        nvarchar ExerciseName UK
+        nvarchar PrimaryMuscleGroup
+        bit IsActive
+    }
+    EXERCISE_EQUIPMENT {
+        bigint ExerciseId PK,FK
+        int EquipmentId PK,FK
+    }
+    WORKOUT_PLANS {
+        bigint WorkoutPlanId PK
+        nvarchar UserId FK
+        nvarchar PlanName
+        tinyint DaysPerWeek
+        varchar ExperienceLevel
+    }
+    WORKOUT_PLAN_DAYS {
+        bigint WorkoutPlanDayId PK
+        bigint WorkoutPlanId FK
+        nvarchar UserId FK
+        tinyint PlanDayNumber
+        nvarchar DayName
+    }
+    WORKOUT_PLAN_EXERCISES {
+        bigint WorkoutPlanExerciseId PK
+        bigint WorkoutPlanDayId FK
+        nvarchar UserId FK
+        bigint ExerciseId FK
+        tinyint Sets
+        smallint RepsMinimum
+        smallint RepsMaximum
+        smallint RestSeconds
+    }
+    WORKOUT_SESSIONS {
+        bigint WorkoutSessionId PK
+        nvarchar UserId FK
+        bigint WorkoutPlanId FK
+        date SessionDate
+        varchar SessionStatus
+    }
+    WORKOUT_LOGS {
+        bigint WorkoutLogId PK
+        bigint WorkoutSessionId FK
+        nvarchar UserId FK
+        bigint ExerciseId FK
+        nvarchar ExerciseNameSnapshot
+        smallint Position
+    }
+    WORKOUT_SETS {
+        bigint WorkoutSetId PK
+        bigint WorkoutLogId FK
+        nvarchar UserId FK
+        tinyint SetNumber
+        smallint Repetitions
+        decimal WeightKg
+    }
